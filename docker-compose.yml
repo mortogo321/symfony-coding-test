@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  app:
+    build: .
+    container_name: app
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+      - rabbitmq
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+    ports:
+      - "3307:3306"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
