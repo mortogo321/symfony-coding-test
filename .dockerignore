@@ -1,6 +1,37 @@
-*.yml
+# Git
+.git
+.gitignore
+
+# Docker
+docker/
 Dockerfile
+docker-compose*.yml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
 .DS_Store
-var
-vendor
+Thumbs.db
+
+# Symfony
+symfony/var/
+symfony/vendor/
+symfony/.env.local
+symfony/.env.*.local
+
+# CI
+.github/
+
+# Docs
 README.md
+*.md
+
+# Tests (optional - remove if you want tests in image)
+# symfony/tests/
+
+# Misc
+*.log
