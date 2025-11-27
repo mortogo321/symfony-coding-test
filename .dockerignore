@@ -1,0 +1,6 @@
+*.yml
+Dockerfile
+.DS_Store
+var
+vendor
+README.md
