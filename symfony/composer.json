@@ -38,7 +38,11 @@
             "symfony/runtime": true
         },
         "bump-after-update": true,
-        "sort-packages": true
+        "sort-packages": true,
+        "platform": {
+            "php": "8.4",
+            "ext-amqp": "2.1.2"
+        }
     },
     "autoload": {
         "psr-4": {

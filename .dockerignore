@@ -3,7 +3,8 @@
 .gitignore
 
 # Docker
-docker/
+docker/*
+!docker/entrypoint.sh
 Dockerfile
 docker-compose*.yml
 
