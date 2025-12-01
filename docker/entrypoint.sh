@@ -1,13 +1,21 @@
 #!/bin/bash
 set -e
 
-APP_ENV=${APP_ENV:-development}
+APP_ENV=${APP_ENV:-dev}
 echo "Starting in $APP_ENV mode..."
 
-# Generate APP_SECRET
-APP_SECRET=$(openssl rand -hex 16)
-sed -i "s/^APP_SECRET=.*/APP_SECRET=$APP_SECRET/" .env
-echo "Generated APP_SECRET: $APP_SECRET"
+# Copy environment-specific .env file if exists
+if [ -f ".env.${APP_ENV}" ] && [ ! -f ".env" ]; then
+    echo "Copying .env.${APP_ENV} to .env..."
+    cp ".env.${APP_ENV}" .env
+fi
+
+# Generate APP_SECRET if .env exists
+if [ -f ".env" ]; then
+    APP_SECRET=$(openssl rand -hex 16)
+    sed -i "s/^APP_SECRET=.*/APP_SECRET=$APP_SECRET/" .env
+    echo "Generated APP_SECRET: $APP_SECRET"
+fi
 
 if [ "$APP_ENV" != "production" ]; then
     # Install dependencies if missing

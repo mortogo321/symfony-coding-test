@@ -26,11 +26,14 @@ CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
 # production
 FROM base AS prod
 
-ENV APP_ENV=production
+ENV APP_ENV=prod
 
 # Copy source code
 COPY symfony/ .
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Copy prod env file
+RUN cp .env.prod .env
 
 # Install production dependencies only
 RUN composer install --no-interaction --no-dev --optimize-autoloader \
