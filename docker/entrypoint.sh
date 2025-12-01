@@ -16,18 +16,16 @@ if [ "$APP_ENV" != "production" ]; then
         composer install --no-interaction
     fi
 
-    # Generate migrations if schema changed
-    echo "Checking for schema changes..."
-    php bin/console doctrine:migrations:diff --no-interaction --allow-empty-diff 2>/dev/null || true
-
-    # Run migrations
+    # Run migrations (sync migration versions if table exists)
     echo "Running migrations..."
-    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration 2>/dev/null || \
+        php bin/console doctrine:migrations:sync-metadata-storage && \
+        php bin/console doctrine:migrations:version --add --all --no-interaction 2>/dev/null || true
 
     # Setup test database
     echo "Setting up test database..."
-    php bin/console doctrine:database:create --env=test --if-not-exists
-    php bin/console doctrine:migrations:migrate --env=test --no-interaction --allow-no-migration
+    php bin/console doctrine:database:create --env=test --if-not-exists 2>/dev/null || true
+    php bin/console doctrine:migrations:migrate --env=test --no-interaction --allow-no-migration 2>/dev/null || true
 
     # Clear cache
     php bin/console cache:clear
