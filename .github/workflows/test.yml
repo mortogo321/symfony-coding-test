@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -7,25 +7,49 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: symfony
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: amqp, pdo_mysql, zip
+          coverage: none
+
+      - name: Validate composer config
+        run: composer validate --no-check-publish
+
+      - name: Lint PHP syntax
+        run: |
+          find src tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
   test:
-    runs-on: ubuntu-latest
+    name: Test
+    runs-on: ubuntu-24.04
 
     services:
       db:
-        image: mysql:8.0
+        image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: app_test
+          MYSQL_DATABASE: app
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping"
+          --health-cmd="mysqladmin ping -h localhost -proot"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=3
+          --health-retries=5
 
       rabbitmq:
-        image: rabbitmq:3-management
+        image: rabbitmq:4.3-management
         ports:
           - 5672:5672
 
@@ -34,7 +58,7 @@ jobs:
         working-directory: symfony
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup environment
         run: |
@@ -67,3 +91,25 @@ jobs:
 
       - name: Run tests
         run: php bin/phpunit
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate compose configs
+        env:
+          APP_SECRET: ci_dummy_secret_for_validation_only
+        run: |
+          docker compose -f docker/docker-compose.yml config --quiet
+          docker compose -f docker/docker-compose.prod.yml config --quiet
+
+      - name: Build dev target
+        run: docker build -f symfony/Dockerfile --target dev -t symfony-coding-test:dev .
+
+      - name: Build prod target
+        run: docker build -f symfony/Dockerfile --target prod -t symfony-coding-test:prod .

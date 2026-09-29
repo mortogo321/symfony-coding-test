@@ -5,6 +5,7 @@ namespace App\Controller\Api;
 use App\DTO\RegisterUserRequest;
 use App\Entity\User;
 use App\Message\UserRegisteredMessage;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -30,8 +31,16 @@ final class UserController extends AbstractController
         $user->setPhone($request->phone);
 
         // Save to database
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->persist($user);
+            $this->entityManager->flush();
+        } catch (UniqueConstraintViolationException $e) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Email is already registered',
+                'errors' => null,
+            ], JsonResponse::HTTP_CONFLICT);
+        }
 
         // Dispatch to RabbitMQ
         $this->messageBus->dispatch(new UserRegisteredMessage(

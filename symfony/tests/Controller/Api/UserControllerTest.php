@@ -6,6 +6,16 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class UserControllerTest extends WebTestCase
 {
+    public function testHealthEndpoint(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/api/health');
+
+        $this->assertResponseIsSuccessful();
+        $response = json_decode($client->getResponse()->getContent(), true);
+        $this->assertEquals('ok', $response['status']);
+    }
+
     public function testRegisterUserSuccess(): void
     {
         $client = static::createClient();
@@ -127,5 +137,25 @@ class UserControllerTest extends WebTestCase
         );
 
         $this->assertResponseStatusCodeSame(422);
+    }
+
+    public function testRegisterUserDuplicateEmail(): void
+    {
+        $client = static::createClient();
+        $email = 'duplicate.'.uniqid().'@example.com';
+        $payload = json_encode([
+            'fullName' => 'Jane Doe',
+            'email' => $email,
+            'phone' => '+1234567890',
+        ]);
+
+        $client->request('POST', '/api/register-user', [], [], ['CONTENT_TYPE' => 'application/json'], $payload);
+        $this->assertResponseStatusCodeSame(201);
+
+        $client->request('POST', '/api/register-user', [], [], ['CONTENT_TYPE' => 'application/json'], $payload);
+        $this->assertResponseStatusCodeSame(409);
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+        $this->assertEquals('error', $response['status']);
     }
 }

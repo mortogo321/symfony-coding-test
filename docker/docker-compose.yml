@@ -9,11 +9,14 @@ services:
       - "8080:8000"
     volumes:
       - ../symfony:/var/www/html
+      # Keep container vendor/cache out of the bind mount for speed
+      - /var/www/html/var
+      - /var/www/html/vendor
     depends_on:
       db:
         condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   db:
@@ -32,7 +35,7 @@ services:
     restart: unless-stopped
 
   rabbitmq:
-    image: rabbitmq:4.1-management
+    image: rabbitmq:4.3-management
     container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: admin
@@ -40,6 +43,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
 networks:

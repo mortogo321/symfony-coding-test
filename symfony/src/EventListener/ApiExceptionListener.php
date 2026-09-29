@@ -2,6 +2,7 @@
 
 namespace App\EventListener;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -21,9 +22,16 @@ class ApiExceptionListener
         $exception = $event->getThrowable();
         $statusCode = 500;
         $errors = [];
+        $message = 'An unexpected error occurred';
 
         if ($exception instanceof HttpExceptionInterface) {
             $statusCode = $exception->getStatusCode();
+
+            // Only expose exception messages for client errors (4xx).
+            // Never leak internal details on 5xx.
+            if ($statusCode < 500) {
+                $message = $exception->getMessage();
+            }
 
             // Check for validation errors
             $previous = $exception->getPrevious();
@@ -37,9 +45,17 @@ class ApiExceptionListener
             }
         }
 
+        // Duplicate email (unique constraint) -> 409 Conflict
+        if ($exception instanceof UniqueConstraintViolationException
+            || ($exception->getPrevious() instanceof UniqueConstraintViolationException)
+        ) {
+            $statusCode = 409;
+            $message = 'Email is already registered';
+        }
+
         $response = new JsonResponse([
             'status' => 'error',
-            'message' => $exception->getMessage(),
+            'message' => $message,
             'errors' => $errors ?: null,
         ], $statusCode);
 

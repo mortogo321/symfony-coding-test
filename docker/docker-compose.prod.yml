@@ -9,11 +9,12 @@ services:
       - "8080:8000"
     environment:
       APP_ENV: prod
+      APP_SECRET: ${APP_SECRET:?Set APP_SECRET to a random 32-byte hex string}
     depends_on:
       db:
         condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     restart: always
 
   db:
@@ -34,7 +35,7 @@ services:
     restart: always
 
   rabbitmq:
-    image: rabbitmq:4.1-management
+    image: rabbitmq:4.3-management
     container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
@@ -44,6 +45,11 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     restart: always
 
 volumes:
